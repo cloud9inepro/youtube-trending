@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TrendPulse — YouTube Trending</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --surface2: #1c1c26;
+      --border: #2a2a38;
+      --accent: #ff3c3c;
+      --accent2: #ff8c00;
+      --text: #f0f0f5;
+      --muted: #6b6b85;
+      --card-hover: #1f1f2e;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Noise texture overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.4;
+    }
+
+    /* Header */
+    header {
+      position: relative;
+      padding: 48px 40px 32px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 20px;
+      background: linear-gradient(180deg, rgba(255,60,60,0.05) 0%, transparent 100%);
+    }
+
+    .logo {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .logo-eyebrow {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .logo h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.03em;
+      color: var(--text);
+    }
+
+    .logo h1 span {
+      color: var(--accent);
+    }
+
+    .header-meta {
+      text-align: right;
+    }
+
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(255,60,60,0.12);
+      border: 1px solid rgba(255,60,60,0.3);
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--accent);
+      letter-spacing: 0.05em;
+    }
+
+    .live-dot {
+      width: 7px; height: 7px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    /* Controls */
+    .controls-bar {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding: 28px 40px;
+      border-bottom: 1px solid var(--border);
+      align-items: flex-end;
+      background: var(--surface);
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+      min-width: 160px;
+    }
+
+    .control-group label {
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+    }
+
+    .control-group select {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b6b85' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 36px;
+      transition: border-color 0.2s;
+    }
+
+    .control-group select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .control-group select:hover {
+      border-color: rgba(255,60,60,0.5);
+    }
+
+    .limit-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 100px;
+    }
+
+    .limit-group label {
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+    }
+
+    .limit-group select {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b6b85' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+      transition: border-color 0.2s;
+    }
+
+    .btn-fetch {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 11px 28px;
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      align-self: flex-end;
+    }
+
+    .btn-fetch:hover {
+      background: #ff1a1a;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(255,60,60,0.3);
+    }
+
+    .btn-fetch:active { transform: translateY(0); }
+    .btn-fetch:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* Results summary */
+    .results-header {
+      position: relative;
+      z-index: 1;
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .results-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .results-title strong {
+      color: var(--text);
+    }
+
+    .results-count {
+      font-size: 12px;
+      color: var(--muted);
+      background: var(--surface2);
+      padding: 4px 12px;
+      border-radius: 100px;
+      border: 1px solid var(--border);
+    }
+
+    /* Grid */
+    .grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border-top: 1px solid var(--border);
+    }
+
+    .video-card {
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      transition: background 0.2s;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    .video-card:hover { background: var(--card-hover); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-thumb {
+      position: relative;
+      aspect-ratio: 16/9;
+      overflow: hidden;
+      background: var(--surface2);
+    }
+
+    .card-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.4s ease;
+    }
+
+    .video-card:hover .card-thumb img {
+      transform: scale(1.04);
+    }
+
+    .card-rank {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: var(--accent);
+      color: white;
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 9px;
+      border-radius: 4px;
+      letter-spacing: 0.05em;
+    }
+
+    .card-body {
+      padding: 16px 20px 20px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .card-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.4;
+      color: var(--text);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-channel {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .card-stats {
+      display: flex;
+      gap: 16px;
+      margin-top: auto;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .stat svg { flex-shrink: 0; }
+
+    .stat span {
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .card-link {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      text-decoration: none;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-top: 4px;
+      transition: gap 0.2s;
+    }
+
+    .card-link:hover { gap: 10px; }
+
+    /* States */
+    .state-container {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 40px;
+      text-align: center;
+      gap: 16px;
+    }
+
+    .state-icon {
+      font-size: 48px;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .state-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .state-sub {
+      font-size: 14px;
+      color: var(--muted);
+      max-width: 380px;
+      line-height: 1.6;
+    }
+
+    .error-state .state-title { color: var(--accent); }
+
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      header, .controls-bar, .results-header { padding: 24px 20px; }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">
+      <div class="logo-eyebrow">YouTube Trending Explorer</div>
+      <h1>Trend<span>Pulse</span></h1>
+    </div>
+    <div class="header-meta">
+      <div class="live-badge">
+        <div class="live-dot"></div>
+        Live Data
+      </div>
+    </div>
+  </header>
+
+  <div class="controls-bar">
+    <div class="control-group">
+      <label>🌍 Region</label>
+      <select id="regionSelect">
+        <option value="US">🇺🇸 United States</option>
+        <option value="NG">🇳🇬 Nigeria</option>
+        <option value="GB">🇬🇧 United Kingdom</option>
+        <option value="CA">🇨🇦 Canada</option>
+        <option value="AU">🇦🇺 Australia</option>
+        <option value="IN">🇮🇳 India</option>
+        <option value="DE">🇩🇪 Germany</option>
+        <option value="FR">🇫🇷 France</option>
+        <option value="JP">🇯🇵 Japan</option>
+        <option value="BR">🇧🇷 Brazil</option>
+        <option value="MX">🇲🇽 Mexico</option>
+        <option value="ZA">🇿🇦 South Africa</option>
+        <option value="GH">🇬🇭 Ghana</option>
+        <option value="KE">🇰🇪 Kenya</option>
+        <option value="EG">🇪🇬 Egypt</option>
+        <option value="KR">🇰🇷 South Korea</option>
+        <option value="ID">🇮🇩 Indonesia</option>
+        <option value="PH">🇵🇭 Philippines</option>
+        <option value="PK">🇵🇰 Pakistan</option>
+        <option value="TR">🇹🇷 Turkey</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label>🎬 Category</label>
+      <select id="categorySelect">
+        <option value="0">All Categories</option>
+        <option value="1">Film & Animation</option>
+        <option value="2">Autos & Vehicles</option>
+        <option value="10">Music</option>
+        <option value="15">Pets & Animals</option>
+        <option value="17">Sports</option>
+        <option value="20">Gaming</option>
+        <option value="22">People & Blogs</option>
+        <option value="23">Comedy</option>
+        <option value="24">Entertainment</option>
+        <option value="25">News & Politics</option>
+        <option value="26">Howto & Style</option>
+        <option value="27">Education</option>
+        <option value="28">Science & Technology</option>
+        <option value="29">Nonprofits & Activism</option>
+      </select>
+    </div>
+
+    <div class="limit-group">
+      <label>📊 Results</label>
+      <select id="limitSelect">
+        <option value="10">10</option>
+        <option value="20" selected>20</option>
+        <option value="30">30</option>
+        <option value="50">50</option>
+      </select>
+    </div>
+
+    <button class="btn-fetch" id="fetchBtn" onclick="fetchTrending()">
+      Fetch Trending →
+    </button>
+  </div>
+
+  <div id="resultsHeader" class="results-header" style="display:none">
+    <div class="results-title" id="resultsTitle"></div>
+    <div class="results-count" id="resultsCount"></div>
+  </div>
+
+  <div id="content">
+    <div class="state-container">
+      <div class="state-icon">🔥</div>
+      <div class="state-title">Discover What's Trending</div>
+      <div class="state-sub">Select a region and category above, then hit <strong>Fetch Trending</strong> to see YouTube's most popular videos right now.</div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '';  // same origin
+
+    async function fetchTrending() {
+      const region = document.getElementById('regionSelect').value;
+      const category = document.getElementById('categorySelect').value;
+      const limit = document.getElementById('limitSelect').value;
+      const btn = document.getElementById('fetchBtn');
+      const content = document.getElementById('content');
+      const resultsHeader = document.getElementById('resultsHeader');
+
+      btn.disabled = true;
+      btn.textContent = 'Loading...';
+      resultsHeader.style.display = 'none';
+
+      content.innerHTML = `
+        <div class="state-container">
+          <div class="spinner"></div>
+          <div class="state-title">Fetching trends...</div>
+          <div class="state-sub">Pulling the latest trending videos from YouTube</div>
+        </div>`;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/trending?region=${region}&category=${category}&limit=${limit}`);
+        const data = await res.json();
+
+        if (data.error) throw new Error(data.error);
+        if (!data.videos || data.videos.length === 0) throw new Error('No videos found for this region/category combination.');
+
+        // Update results header
+        const regionLabel = document.getElementById('regionSelect').options[document.getElementById('regionSelect').selectedIndex].text;
+        const categoryLabel = document.getElementById('categorySelect').options[document.getElementById('categorySelect').selectedIndex].text;
+        document.getElementById('resultsTitle').innerHTML = `Trending in <strong>${regionLabel}</strong> · <strong>${categoryLabel}</strong>`;
+        document.getElementById('resultsCount').textContent = `${data.videos.length} videos`;
+        resultsHeader.style.display = 'flex';
+
+        // Render cards
+        content.innerHTML = `<div class="grid">${data.videos.map((v, i) => renderCard(v, i + 1)).join('')}</div>`;
+
+      } catch (err) {
+        content.innerHTML = `
+          <div class="state-container error-state">
+            <div class="state-icon">⚠️</div>
+            <div class="state-title">Something went wrong</div>
+            <div class="state-sub">${err.message || 'Failed to fetch trending videos. Check your API key and try again.'}</div>
+          </div>`;
+        resultsHeader.style.display = 'none';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Fetch Trending →';
+      }
+    }
+
+    function renderCard(video, rank) {
+      const delay = ((rank - 1) % 12) * 40;
+      return `
+        <div class="video-card" style="animation-delay: ${delay}ms">
+          <div class="card-thumb">
+            <img src="${video.thumbnail}" alt="${escapeHtml(video.title)}" loading="lazy" />
+            <div class="card-rank">#${rank}</div>
+          </div>
+          <div class="card-body">
+            <div class="card-title">${escapeHtml(video.title)}</div>
+            <div class="card-channel">${escapeHtml(video.channel)}</div>
+            <div class="card-stats">
+              <div class="stat">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+                <span>${video.views}</span>
+              </div>
+              <div class="stat">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+                </svg>
+                <span>${video.likes}</span>
+              </div>
+            </div>
+            <a class="card-link" href="${video.url}" target="_blank" rel="noopener">
+              Watch on YouTube
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M7 17L17 7M7 7h10v10"/>
+              </svg>
+            </a>
+          </div>
+        </div>`;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+  </script>
+</body>
+</html>
